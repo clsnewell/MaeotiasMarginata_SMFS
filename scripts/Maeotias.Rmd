@@ -1,0 +1,44 @@
+---
+title: "Maeotias"
+author: "Caroline Newell"
+date: "1/26/2022"
+output: word_document
+editor_options: 
+  chunk_output_type: console
+---
+```{r}
+library(tidyverse)
+library(readxl)
+library(lubridate)
+library(ggplot2)
+
+Maeotias_Query <- read_excel("R/Maeotias_Query.xlsx")
+
+DeltaFlow_1960_2021 <- read_csv("IEP2022_Maeotias/Maeotias_Coding_2022/data/DeltaFlow_WaterYears1960_2021.csv")
+```
+
+```{r}
+str(Maeotias_Query)
+Maeotias_Query$Year<- format(Maeotias_Query$SampleDate, format = "%Y")
+Year<- Maeotias_Query$Year
+Maeotias_Query$Month<- format(Maeotias_Query$SampleDate, format = "%m")
+
+ggplot(data = Maeotias_Query, aes(x=Year, y = Count)) +
+  stat_summary(fun=sum, geom = "bar")
+
+ggplot(data = Maeotias_Query, aes(x=Month, y = Count)) +
+  stat_summary(fun=sum, geom = "bar")
+
+ggplot(data = Maeotias_Query, aes(x=StationCode, y = Count)) +
+  stat_summary(fun=sum, geom = "bar")
+```
+
+Lets bring delta outflow into the mix. Plot net delta outflow at Chipps Island
+```{r}
+#sum by water year
+df <- DeltaFlow1960_2021 %>% mutate(WaterYear = water_year(Date, origin = "usgs"))
+DeltaFlow1960_2021_WaterYear<-df %>% group_by(WaterYear) %>% summarise(Outflow_MAF = sum(OUT*1.983)/1000000) #24 hours at 1 cfs  = 1.983 acre feet
+DeltaFlow1960_2021_WaterYear$WaterYear<- as.Date(as.character(DeltaFlow1960_2021_WaterYear$WaterYear), format="%Y")
+#Only plot for years we have catch data for...
+
+```
