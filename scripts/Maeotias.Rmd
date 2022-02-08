@@ -12,9 +12,10 @@ library(readxl)
 library(lubridate)
 library(ggplot2)
 
-Maeotias_Query <- read_excel("R/Maeotias_Query.xlsx")
+MaeotiasQuery2022 <- read_excel("data/MaeotiasQuery2022.xlsx")
 
-DeltaFlow_1960_2021 <- read_csv("IEP2022_Maeotias/Maeotias_Coding_2022/data/DeltaFlow_WaterYears1960_2021.csv")
+DeltaFlow_WaterYears1960_2021 <- read_csv("data/DeltaFlow_WaterYears1960_2021.csv")
+
 ```
 
 ```{r}
