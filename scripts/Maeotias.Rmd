@@ -13,7 +13,6 @@ library(lubridate)
 library(ggplot2)
 library(lfstat)
 
-
 MaeotiasQuery2022 <- read_excel("data/MaeotiasQuery2022.xlsx")
 range(MaeotiasQuery2022$SampleDate)
 DeltaFlow_WaterYears1960_2021 <- read_csv("data/DeltaFlow_WaterYears1960_2021.csv")
@@ -39,21 +38,41 @@ DeltaFlow_WY.1981_2021$WaterYear<-lubridate::year(DeltaFlow_WY.1981_2021$WaterYe
 ```
 
 Now I need to append flow information to the jellyfish catch data. I can do that by giving the jellyfish catch data a column for water year and then match that column to my outflow stuff.
+```{r}
+#Adding water year to jelly data
+MaeotiasQuery2022<-MaeotiasQuery2022 %>% mutate(WaterYear = water_year(SampleDate, origin = "usgs"))
 
+str(MaeotiasQuery2022)
+
+#Appending flow info to jelly data
+Maeotias2022<-full_join(MaeotiasQuery2022, DeltaFlow_WY.1981_2021, by="WaterYear") #Lovely! Write that up!
+
+write.csv(Maeotias2022, "data/Maeotias2022_WithOutflow.csv")
+
+Maeotias2022$WaterYear<-format(MaeotiasQuery2022$WaterYear, format = "%Y")
+```
 
 ```{r}
-str(Maeotias_Query)
-Maeotias_Query$Year<- format(Maeotias_Query$SampleDate, format = "%Y")
-Year<- Maeotias_Query$Year
-Maeotias_Query$Month<- format(Maeotias_Query$SampleDate, format = "%m")
+str(Maeotias2022)
+Maeotias2022$WaterYear<- as.Date(as.character(Maeotias2022$WaterYear), format = "%Y")
+Maeotias2022$WaterYear<- lubridate::year(Maeotias2022$WaterYear)
 
-ggplot(data = Maeotias_Query, aes(x=Year, y = Count)) +
+Maeotias2022$Month<- format(Maeotias2022$SampleDate, format = "%m")
+
+write.csv(Maeotias2022, "data/Maeotias2022_WithOutflow_YearNumeric.csv")
+
+
+ggplot(data = Maeotias2022, aes(x=WaterYear, y = Count)) +  geom_rect(aes(xmin=1987, xmax=1992, ymin=0, ymax=Inf),fill = "grey75", alpha = .1) +
+  geom_rect(aes(xmin=2007, xmax=2009, ymin=0, ymax=Inf),fill = "grey75", alpha = .1) +
+  geom_rect(aes(xmin=2012, xmax=2016, ymin=0, ymax=Inf),fill = "grey75", alpha = .1)+
+  geom_rect(aes(xmin=2020, xmax=2021, ymin=0, ymax=Inf),fill = "grey75", alpha = .1)+
+  stat_summary(fun=sum, geom = "bar")+ xlab("Water Year") +  ylab("Count") + ggtitle("SMFS Total Catch of M. marginata")+ scale_x_continuous(breaks=c(1980, 1990, 2000, 2010, 2020))+
+  theme_classic(base_size=16) 
+
+ggplot(data = Maeotias2022, aes(x=Month, y = Count)) +
   stat_summary(fun=sum, geom = "bar")
 
-ggplot(data = Maeotias_Query, aes(x=Month, y = Count)) +
-  stat_summary(fun=sum, geom = "bar")
-
-ggplot(data = Maeotias_Query, aes(x=StationCode, y = Count)) +
+ggplot(data = Maeotias2022, aes(x=StationCode, y = Count)) +
   stat_summary(fun=sum, geom = "bar")
 ```
 
