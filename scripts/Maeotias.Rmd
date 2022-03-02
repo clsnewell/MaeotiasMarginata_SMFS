@@ -11,12 +11,35 @@ library(tidyverse)
 library(readxl)
 library(lubridate)
 library(ggplot2)
+library(lfstat)
+
 
 MaeotiasQuery2022 <- read_excel("data/MaeotiasQuery2022.xlsx")
-
+range(MaeotiasQuery2022$SampleDate)
 DeltaFlow_WaterYears1960_2021 <- read_csv("data/DeltaFlow_WaterYears1960_2021.csv")
 
+drought_years<-c(1976, 1977, 1987, 1988, 1989, 1990, 1991, 1992, 2007, 2008, 2009, 2012, 2013, 2014, 2015, 2016, 2020, 2021) #data from: https://water.ca.gov/water-basics/drought  and Peter (2020, 2021)
 ```
+The data isn't exactly what I want, so I'll have to format a bit. I only want flow data that relates to the SMFS data - which only goes back to 1981. So lets parse down the flow data to the 1981 water year and give Maeotias data a water year. Water years start Oct. 1st of the year prior to the reference year...
+# Parsing Flows
+Only care about outflow since that is what impacts the jellies.
+```{r}
+DeltaFlow_WY.1981_2021<- DeltaFlow_WaterYears1960_2021 %>% 
+  filter(Date >="1980-10-01") %>% 
+  mutate(WaterYear = water_year(Date, origin = "usgs")) %>% 
+  group_by(WaterYear) %>% 
+  summarise(Outflow_MAF = sum(OUT*1.983)/1000000) #24 hours at 1 cfs  = 1.983 acre feet
+str(DeltaFlow_WY.1981_2021) #Need water year to be viewed as an integer.
+
+DeltaFlow_WY.1981_2021$WaterYear<-format(DeltaFlow_WY.1981_2021$WaterYear, format = "%Y")
+
+DeltaFlow_WY.1981_2021$WaterYear<-lubridate::year(DeltaFlow_WY.1981_2021$WaterYear)
+  
+  #year(as.Date(as.character(DeltaFlow_WY.1981_2021$WaterYear), format="%Y")) #Recognizing year as number I guess.
+```
+
+Now I need to append flow information to the jellyfish catch data. I can do that by giving the jellyfish catch data a column for water year and then match that column to my outflow stuff.
+
 
 ```{r}
 str(Maeotias_Query)
