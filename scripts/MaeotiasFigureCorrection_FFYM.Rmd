@@ -1,0 +1,340 @@
+---
+title: "MaoetiasCorrected"
+author: "Caroline Newell"
+date: "3/8/2022"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+#False Figure Coding
+http://zevross.com/blog/2014/08/04/beautiful-plotting-in-r-a-ggplot2-cheatsheet-3/#make-title-bold-and-add-a-little-space-at-the-baseline-face-vjust
+Above link for plotting aesthetics help
+https://www.techradar.com/news/the-best-free-adobe-illustrator-alternatives#:~:text=1.,Inkscape&text=Open%20source%20vector%20graphics%20package,graphic%20designers%20and%20web%20designers.
+Above link for free illustrators. Or use draw pdf platform
+
+```{r}
+library(readxl)
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(ggthemes)
+library(extrafont)
+library(gridExtra)
+#font_import() # import all your fonts
+loadfonts(device = "win")
+fonts() #get a list of fonts
+fonttable()
+fonttable()[40:45,] # very useful table listing the family name, font name etc
+pdf('fonttable.pdf', width=10, height=10)
+print(pf)
+dev.off()
+
+#writeLines('PATH="${RTOOLS40_HOME}\\usr\\bin;${PATH}"', con = "~/.Renviron")
+#Sys.which("make")
+## "C:\\rtools40\\usr\\bin\\make.exe"
+
+
+FishInvert <- read_excel("C:/Users/cnewe/Documents/fish/CWS/Maeotias Writing/MaeotiasDataAnalysis/Data/FishInvert.xlsx", na=c("", "NA"))
+#Only 2019 Data
+
+cols = c(3, 4, 8, 9, 10, 11, 12, 13, 14,15)    
+FishInvert[,cols] = apply(FishInvert[,cols], 2, function(x) as.numeric(as.character(x)))
+
+MPOD<-read_excel("C:/Users/cnewe/Documents/fish/CWS/Maeotias Writing/MaeotiasDataAnalysis/Data/MPOD_AllYears.xlsx", na=c("", "NA"))
+cols = c(3, 4, 8, 9, 10, 11, 12, 13, 14,15)    
+MPOD[,cols] = apply(MPOD[,cols], 2, function(x) as.numeric(as.character(x)))
+
+WQ <- read_excel("C:/Users/cnewe/Documents/fish/CWS/Maeotias Writing/MaeotiasDataAnalysis/Data/WQ.xlsx", na=c("", "NA"))
+
+MaeotiasQueryFull <- read_excel("C:/Users/cnewe/Documents/fish/CWS/Maeotias Writing/MaeotiasDataAnalysis/Data/MaeotiasQuery.xlsx", na=c("", "NA"))
+
+MaeotiasCountYearTow<-MaeotiasQueryFull[ , c(1:4,8, 10, 19) ]
+
+MaeotiasQuery.NAremoved<- na.omit(MaeotiasCountYearTow)
+
+#install.packages("ggeasy")
+
+library(ggeasy) # NEED TO INSTALL
+```
+
+## Analysis
+```{r}
+#How many jellyfish caught last year?
+#Count2019<- FishInvert %>% filter(OrganismCode == "Maeotias") %>% gather(Count, Year) %>% group_by(OrganismCode) %>% group_by(Year) %>% summarise(Sum = sum(Count))
+
+
+TempAnalysis<- FishInvert[OrganismCode == "Maeotias"] %>%  lm(Count ~ WaterTemperature)
+
+summary(TempAnalysis)
+
+plot(TempAnalysis)
+ols_plot_resid_hist(TempAnalysis)
+ols_plot_resid_fit(TempAnalysis)
+ols_test_normality(TempAnalysis)
+
+```
+
+## Plots
+Okay, I want to look at how numbers change seasonally for jellies...
+So I need to pull numbers by month, and group months into bins for seasons...
+
+
+```{r}
+CountM2019<-FishInvert %>% filter(OrganismCode == "MAEOTIAS") %>% 
+  group_by(Year) %>% 
+  summarise(total_M = sum(Count)) %>% 
+  arrange(desc(total_M))
+CountM2019
+
+CountM<-MPOD %>% filter(OrganismCode == "MAEOTIAS") %>% 
+  group_by(Year) %>% 
+  summarise(total_M = sum(Count)) %>% 
+  arrange(desc(total_M))
+
+CountM
+
+Plot1<- ggplot(MaeotiasQuery, aes(SampleDate, Count/TowDuration)) + geom_col() + ggtitle("Total Maeotias in Suisun Marsh Since 1978") + ylab("Total Maeotias") + xlab("Year") +  ylim(0, 300) + theme(plot.title = element_text(size=15,lineheight=.8, 
+  vjust=1,family="Elephant")) + theme(axis.text = element_text(size=8,lineheight=.8, 
+  vjust=1,family="Microsoft Sans Serif")) + theme(axis.title = element_text(size=13,lineheight=.8, 
+  vjust=1,family="Tahoma")) + theme(plot.background = element_rect(fill = 'skyblue')) + theme(panel.background = element_rect(fill = 'grey'))
+
+Plot1
+
+as.vector(CountByDuration<-(MaeotiasQuery$Count/MaeotiasQuery$TowDuration))
+str(MaeotiasQuery$Count)
+str(MaeotiasQuery$TowDuration)
+range(MaeotiasQuery$Count)
+range(MaeotiasQuery$TowDuration)
+as.numeric(MaeotiasQuery$Count)
+
+str(MaeotiasQuery.NAremoved$Count)
+str(MaeotiasQuery.NAremoved$TowDuration)
+range(MaeotiasQuery.NAremoved$TowDuration)
+StandardizedData<- (MaeotiasQuery.NAremoved$Count/MaeotiasQuery.NAremoved$TowDuration)
+
+StandardizedData
+range(StandardizedData)
+
+# I think it isn't summing year data... So I'll walk it through that.
+str(MaeotiasQuery.NAremoved$SampleDate)
+#MaeotiasQuery.NAremoved$Year<-MaeotiasQuery.NAremoved$SampleDate$year
+
+#library(plyr)
+#library(lubridate)
+#mutate(MaeotiasQuery.NAremoved, date = ymd(SampleDate), day = day(date), month = month(date), year = year(date))
+
+
+format(as.Date(df1$Date, format="%d/%m/%Y"),"%Y")
+
+#Plot2<- ggplot(CountM, aes(Year, total_M)) + geom_col() + ggtitle("Total Maeotias in Suisun Marsh Since 1978") + ylab("Total Maeotias") + xlab("Year") + theme_economist() + scale_colour_economist() 
+MaeotiasQuery.NAremoved$year<-year(MaeotiasQuery.NAremoved$SampleDate)
+view(MaeotiasQuery.NAremoved)
+
+#MaeotiasByYear<-aggregate(data=MaeotiasQuery.NAremoved, by = list(year), FUN=sum)
+
+library(data.table)
+MaeotiasByYear<-data.table(MaeotiasQuery.NAremoved)
+MaeotiasCountByYear<-MaeotiasByYear[, .(TotalCount = sum(Count)), by = .(year)]
+MaeotiasCountByYear
+MaeotiasTrawlByYear<-MaeotiasByYear[, .(TotalTow = sum(TowDuration)), by = .(year)]
+MaeotiasTrawlByYear
+
+MaeostiasYearTotalsStandardized<-merge(MaeotiasCountByYear, MaeotiasTrawlByYear, by = "year") 
+MaeostiasYearTotalsStandardized
+
+
+Plot2<- ggplot(MaeostiasYearTotalsStandardized, aes(year, TotalCount/TotalTow)) + geom_col() + ggtitle("Black Sea Jellyfish Caught per Trawl Minute") + ylab("Number of Black Sea Jellyfish per Minute of Trawling\n") + theme(plot.title = element_text(hjust = 0.5)) + xlab("\nYear") + theme_economist() + scale_colour_economist() 
+ # why so many missing years?
+
+Plot2
+
+#Let's also throw in a plot with just totals since we are qualifying the trend by a standardized item.
+Plot3<- ggplot(MaeostiasYearTotalsStandardized, aes(year, TotalCount)) + geom_col() + ggtitle("Total Number of Black Sea Jellyfish Caught") + ylab("Number of Black Sea Jellyfish Caught with Trawl\n") + theme(plot.title = element_text(hjust = 0.5)) + xlab("\nYear") + theme_economist() + scale_colour_economist() 
+ # why so many missing years?
+
+Plot3
+
+#Combine plots into one view
+#install.packages("devtools") #issue with download... going with a different option
+#library(devtools)
+#devtools::install_github("thomasp85/patchwork")
+
+#install.packages("gridExtra")
+#library(gridExtra)
+grid.arrange(Plot2, Plot3, ncol=2)
+
+```
+
+# WATER YEAR Figure
+CLEAR ENVIRONMENT.
+
+## Wrangling Maeotias Data
+Need to give data water year information.
+
+```{r}
+#Adding water year to jelly data
+MaeotiasQuery2022<-MaeotiasQuery2022 %>% mutate(WaterYear = water_year(SampleDate, origin = "usgs"))
+
+str(MaeotiasQuery2022)
+
+#Appending flow info to jelly data
+#Actually I don't need to do that for this presentation...
+#Maeotias2022<-full_join(MaeotiasQuery2022, DeltaFlow_WY.1981_2021, by="WaterYear") #Lovely! Write that up!
+
+#write.csv(Maeotias2022, "data/Maeotias2022_WithOutflow.csv")
+
+
+```
+
+##Total Catch of M Marginata
+
+```{r}
+str(MaeotiasQuery2022)
+MaeotiasQuery2022$WaterYear<-format(MaeotiasQuery2022$WaterYear, format = "%Y")
+
+MaeotiasQuery2022$WaterYear<- as.Date(as.character(MaeotiasQuery2022$WaterYear), format = "%Y")
+
+MaeotiasQuery2022$WaterYear<- lubridate::year(MaeotiasQuery2022$WaterYear)
+
+MaeotiasQuery2022$Month<- format(MaeotiasQuery2022$SampleDate, format = "%m")
+MaeotiasQuery2022_WaterYearNumeric<- MaeotiasQuery2022
+write.csv(MaeotiasQuery2022_WaterYearNumeric, "data/MaeotiasQuery2022_WaterYearNumeric.csv")
+```
+
+### Plotting
+```{r}
+
+ggplot(data = MaeotiasQuery2022_WaterYearNumeric, aes(x=WaterYear, y = Count)) +  geom_rect(aes(xmin=1987, xmax=1992, ymin=0, ymax=Inf),fill = "grey75", alpha = .1) +
+  geom_rect(aes(xmin=2007, xmax=2009, ymin=0, ymax=Inf),fill = "grey75", alpha = .1) +
+  geom_rect(aes(xmin=2012, xmax=2016, ymin=0, ymax=Inf),fill = "grey75", alpha = .1)+
+  geom_rect(aes(xmin=2020, xmax=2021, ymin=0, ymax=Inf),fill = "grey75", alpha = .1)+
+  stat_summary(fun=sum, geom = "bar")+ xlab("Water Year") +  ylab("Count") + ggtitle("SMFS Total Catch of M. marginata")+ scale_x_continuous(breaks=c(1980, 1990, 2000, 2010, 2020))+
+  theme_classic(base_size=16) 
+
+ggplot(data = MaeotiasQuery2022_WaterYearNumeric, aes(x=Month, y = Count)) +
+  stat_summary(fun=sum, geom = "bar")
+
+ggplot(data = MaeotiasQuery2022_WaterYearNumeric, aes(x=StationCode, y = Count)) +
+  stat_summary(fun=sum, geom = "bar")
+```
+
+##Catch per unit effort
+
+```{r}
+str(MaeotiasQuery2022_WaterYearNumeric)
+#A plot of effort but only for the trawls that caught maeotias.
+ggplot(data = MaeotiasQuery2022_WaterYearNumeric, aes(x=WaterYear, y = Count/TowDuration)) +  geom_rect(aes(xmin=1987, xmax=1992, ymin=0, ymax=Inf),fill = "grey75", alpha = .1) +
+  geom_rect(aes(xmin=2007, xmax=2009, ymin=0, ymax=Inf),fill = "grey75", alpha = .1) +
+  geom_rect(aes(xmin=2012, xmax=2016, ymin=0, ymax=Inf),fill = "grey75", alpha = .1)+
+  geom_rect(aes(xmin=2020, xmax=2021, ymin=0, ymax=Inf),fill = "grey75", alpha = .1)+
+  stat_summary(fun=sum, geom = "bar")+ xlab("Water Year") +  ylab("Catch per Minute Trawl") + ggtitle("SMFS CPUE of M. marginata \nfor Trawls that Caught M. marginata")+ scale_x_continuous(breaks=c(1980, 1990, 2000, 2010, 2020))+
+  theme_classic(base_size=16) 
+#This plot shows how spotty they are. When you catch 'em, you catch a lot.
+
+#Now I want a true reflection of CPUE that includes trawls that didn't catch Mm
+```
+
+##CPUE All Trawls
+
+```{r}
+Trawls <- read_excel("data/Trawls.xlsx")
+
+Trawls_WY<-Trawls %>% mutate(WaterYear = water_year(SampleDate, origin = "usgs"))
+unique(Trawls_WY$WaterYear)
+#Give trawls water years
+Trawls_WY_Sum<- Trawls_WY %>% group_by(WaterYear) %>% summarise(
+  TrawlDurationSum = sum(na.omit(TowDuration))
+)
+#Sweet
+write.csv(Trawls_WY_Sum, "data/Trawls_WY_Sum.csv")
+
+#Now I want to sum the catch of Mm by year in a dataframe.
+MaeotiasQuery2022_WaterYearSum<-MaeotiasQuery2022_WaterYearNumeric %>% group_by(WaterYear) %>% summarise(
+  CountSum=sum(Count)
+)
+
+#Now we merge
+MaeotiasCPUE_AllTrawls<- merge(MaeotiasQuery2022_WaterYearSum, Trawls_WY_Sum, by = "WaterYear")
+
+#Add a column of CPUE
+MaeotiasCPUE_AllTrawls<- mutate(MaeotiasCPUE_AllTrawls, CPUE = CountSum/TrawlDurationSum)
+#I will think about deleting 2022. May be construed as misleading.
+```
+
+Cool, I can plot now.
+
+## Plotting
+
+###Year
+```{r}
+MaeotiasCPUE_AllTrawls.2019<- filter(MaeotiasCPUE_AllTrawls, WaterYear<2020)
+View(MaeotiasCPUE_AllTrawls.2019)
+
+CPUE.Plot<- ggplot(MaeotiasCPUE_AllTrawls.2019, aes(x=WaterYear, y=CPUE))+ 
+  stat_summary(fun=sum, geom = "bar")+  ylab("Number of Black Sea Jellyfish\n per Minute of Trawling\n") + ggtitle("Black Sea Jellyfish Caught per Trawl Minute for All Trawls")+ scale_x_continuous(breaks=c(1980, 1990, 2000, 2010, 2020))+theme(plot.title = element_text(hjust = 0.5)) + xlab("\nWater Year") + theme_economist() + scale_colour_economist() 
+CPUE.Plot
+
+MaeotiasQuery2022_WaterYearNumeric.2019<- filter(MaeotiasQuery2022_WaterYearNumeric, WaterYear<2020)
+
+Total.Plot<- ggplot(data = MaeotiasQuery2022_WaterYearNumeric.2019, aes(x=WaterYear, y = Count))+
+  stat_summary(fun=sum, geom = "bar")+ xlab("Water Year") +  ylab("Count\n") + ggtitle("Total Number of Black Sea Jellyfish Caught")+ scale_x_continuous(breaks=c(1980, 1990, 2000, 2010, 2020))+
+  theme(plot.title = element_text(hjust = 0.5)) + xlab("\nWater Year") + theme_economist() + scale_colour_economist() 
+Total.Plot
+
+grid.arrange(CPUE.Plot, Total.Plot, ncol=2)
+```
+
+
+# CORRECTED FIGURE
+CLEAR ENVIRONMENT
+```{r}
+library(tidyverse)
+library(readxl)
+library(lubridate)
+library(ggplot2)
+library(lfstat)
+
+MaeotiasQuery2022 <- read_excel("data/MaeotiasEffortQuery.xlsx")
+str(MaeotiasQuery2022)
+#Separate Year into own column
+MaeotiasQuery2022$Year<- format(MaeotiasQuery2022$SampleDate, format = "%Y")
+MaeotiasQuery2022_Sum<- MaeotiasQuery2022 %>% group_by(Year) %>% summarise(
+  CountSum = sum(Count)
+)
+
+Trawls <- read_excel("data/Trawls.xlsx")
+Trawls$Year<- format(Trawls$SampleDate, format = "%Y")
+
+Trawls_Year_Sum<- Trawls %>% group_by(Year) %>% summarise(
+  TrawlDurationSum = sum(na.omit(TowDuration))
+)
+
+#Merge these sums
+MaeotiasCPUE_AllTrawls<- merge(MaeotiasQuery2022_Sum, Trawls_Year_Sum, by = "Year")
+view(MaeotiasCPUE_AllTrawls)
+#I only want up to year 2019.
+MaeotiasCPUE_AllTrawls.2019<-filter(MaeotiasCPUE_AllTrawls, Year<2020)
+
+#Add a column of CPUE
+MaeotiasCPUE_AllTrawls.2019<- mutate(MaeotiasCPUE_AllTrawls.2019, CPUE = CountSum/TrawlDurationSum)
+
+str(MaeotiasCPUE_AllTrawls.2019)
+
+MaeotiasCPUE_AllTrawls.2019$Year<- as.numeric(MaeotiasCPUE_AllTrawls.2019$Year)
+#Plot CPUE
+
+CPUE.Plot<- ggplot(MaeotiasCPUE_AllTrawls.2019, aes(x=Year, y=CPUE))+ 
+  stat_summary(fun=sum, geom = "bar")+  ylab("Number of Black Sea Jellyfish\n per Minute of Trawling\n") + ggtitle("Black Sea Jellyfish Caught per Trawl Minute for All Trawls")+ scale_x_continuous(breaks=c(1980, 1990, 2000, 2010, 2020))+theme(plot.title = element_text(hjust = 0.5)) + xlab("\nYear") + theme_economist() + scale_colour_economist() 
+CPUE.Plot
+
+
+#Plot Total Catch
+Total.Plot<- ggplot(data = MaeotiasCPUE_AllTrawls.2019, aes(x=Year, y = CountSum))+
+  stat_summary(fun=sum, geom = "bar")+ xlab("\nYear") +  ylab("Number of Black Sea Jellyfish Caught with Trawl\n") + ggtitle("Total Number of Black Sea Jellyfish Caught")+ scale_x_continuous(breaks=c(1980, 1990, 2000, 2010, 2020))+
+  theme(plot.title = element_text(hjust = 0.5)) + theme_economist() + scale_colour_economist() 
+Total.Plot
+
+#Put em together
+grid.arrange(CPUE.Plot, Total.Plot, ncol=2)
+```
